@@ -9,7 +9,8 @@ logging.debug('starting')
 
 # load/configure flask
 try:
-    from flask import Flask, escape, request
+    import flaskr
+    # from flask import Flask, escape, request
 except ModuleNotFoundError as err:
     logging.critical(f"early initialization error. {type(err).__name__}: {err}")
     # print(f"Unexpected {err=}, {type(err)=}")
@@ -26,7 +27,7 @@ def maintenance_thread(dumbval):
     cur_thr = threading.current_thread()
     logging.info("[%s %s] starting", cur_thr.name, cur_thr.native_id)
     while True:
-        time.sleep(1)
+        time.sleep(10)
         logging.info("[%s %s] executing", cur_thr.name, cur_thr.native_id)
     logging.info("[%s] finishing", cur_thr.name)
     return 0
@@ -40,14 +41,7 @@ def web_thread():
 # Flask routes
 ##################################
 
-app = Flask(__name__)
-
-@app.route('/')
-def hello():
-    name = request.args.get("name", "World")
-    return f'Hellooo, {escape(name)}!'
-
-    cur_thr = threading.current_thread()
+app = flaskr.create_app()
 
 ##################################
 # Main part
