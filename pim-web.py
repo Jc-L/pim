@@ -1,15 +1,64 @@
 
+import argparse
+import os
+from asyncio.windows_events import NULL
+from curses import meta
+import logging
 import threading
 import time
 
-# load/configure logging
-import logging
-logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.DEBUG, datefmt='%Y-%d-%m %H:%M:%S')
-logging.debug('starting')
+class PimApp:
+    loglevel = logging.WARNING
+    logger = NULL
+    env = NULL
+    modules = {'web', 'cli'}
 
-# load/configure flask
+pim_app = PimApp()
+
+class Config(object):
+    TESTING = False
+
+class ProductionConfig(Config):
+    DATABASE = "db/prod.db"
+    ENV="production"
+
+class DevelopmentConfig(Config):
+    DATABASE = "db/dev.db"
+    ENV="development"
+
+class TestingConfig(Config):
+    DATABASE = ':memory:'
+    ENV="testing"
+    TESTING = True
+
+# commandline management
+cmdlineparser = argparse.ArgumentParser(description='Start PIM, the Personal Information Manager')
+# commandline options for loglevel
+group_loglevel = cmdlineparser.add_mutually_exclusive_group()
+group_loglevel.add_argument('-d', '--debug', action='store_const', dest='loglevel', const=logging.DEBUG, default=logging.WARNING, help="activate debug loglevel" )
+group_loglevel.add_argument('-v', '--verbose', action='store_const', dest='loglevel', const=logging.INFO, default=logging.WARNING, help="activate verbose (info) loglevel" )
+group_env = cmdlineparser.add_mutually_exclusive_group(required=True)
+group_env.add_argument('--prod', action='store_const', dest='config', const=ProductionConfig, help='use "production" environment' )
+group_env.add_argument('--dev',  action='store_const', dest='config', const=DevelopmentConfig, help='use "development"" environment' )
+group_env.add_argument('--test', action='store_const', dest='config', const=TestingConfig, help='use "testing" environment' )
+group_disable_modules = cmdlineparser.add_argument_group(title='options for modules', description=None)
+group_disable_modules.add_argument('--disable-web', action='append_const', dest='disable', const='web', help='disable web server' )
+group_disable_modules.add_argument('--disable-cli', action='append_const', dest='disable', const='cli', help='disable command-line interface' )
+cmdlineargs = cmdlineparser.parse_args()
+# commandline content used to update global pim_app object
+pim_app.loglevel = cmdlineargs.loglevel
+pim_app.config = cmdlineargs.config
+if cmdlineargs.disable != None:
+    pim_app.modules = pim_app.modules - set(cmdlineargs.disable)
+
+# load/configure logging
+logging.basicConfig(format='[%(asctime)s] %(levelname)s %(message)s', level=pim_app.loglevel, datefmt='%Y-%d-%m %H:%M:%S')
+logging.debug('debug mode is active')
+
+# load/configure local modules
 try:
-    from flask import Flask, escape, request
+    import pimdata
+    import flaskr
 except ModuleNotFoundError as err:
     logging.critical(f"early initialization error. {type(err).__name__}: {err}")
     # print(f"Unexpected {err=}, {type(err)=}")
@@ -22,11 +71,11 @@ except BaseException as err:
 # 
 ##################################
 
-def maintenance_thread(dumbval):
+def thread_maintenance(dumbval):
     cur_thr = threading.current_thread()
     logging.info("[%s %s] starting", cur_thr.name, cur_thr.native_id)
     while True:
-        time.sleep(1)
+        time.sleep(10)
         logging.info("[%s %s] executing", cur_thr.name, cur_thr.native_id)
     logging.info("[%s] finishing", cur_thr.name)
     return 0
@@ -35,27 +84,19 @@ def maintenance_thread(dumbval):
 def web_thread():
     return 0
     
-
-##################################
-# Flask routes
-##################################
-
-app = Flask(__name__)
-
-@app.route('/')
-def hello():
-    name = request.args.get("name", "World")
-    return f'Hellooo, {escape(name)}!'
-
-    cur_thr = threading.current_thread()
-
 ##################################
 # Main part
 ##################################
+logging.debug(f'using environment "{pim_app.config.ENV}"')
 
 if __name__ == "__main__":
-    logging.debug('creating maintenance thread ')
-    maintenance_thread = threading.Thread(target=maintenance_thread, name='maintenance_thread', daemon=True, args=("dumb value",))
-    maintenance_thread.start()
-    logging.debug('flask app starting in main thread')
-    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False, threaded=True)
+    logging.debug(f'starting {len(pim_app.modules)} module(s)')
+    if 'web' in pim_app.modules:
+        logging.debug('creating maintenance thread')
+        thread_maintenance = threading.Thread(target=thread_maintenance, name='maintenance', daemon=True, args=("dumb value",))
+        thread_maintenance.start()
+    if 'web' in pim_app.modules:
+        logging.debug('creating flask app')
+        flask_app = flaskr.create_app(pim_app.config)
+        logging.debug('flask app starting in main thread')
+        flask_app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False, threaded=True)
