@@ -1,7 +1,7 @@
 import os
 
 # local modules
-import pimdata
+from pimdata import *
 
 from flask import Flask, render_template, url_for
 
@@ -31,6 +31,10 @@ def create_app(config):
     def hello(name=None):
         return render_template('hello.html', name=name)
     
-    # url_for('static', filename='style.css')
+    @app.route('/tasks/')
+    def tasks():
+        return render_template('tasks.html', tasks=Task.select())
+
+   #  url_for('static', filename='style.css')
 
     return app
