@@ -7,29 +7,17 @@ import logging
 import threading
 import time
 
-class PimApp:
-    loglevel = logging.WARNING
-    logger = NULL
-    env = NULL
-    modules = {'web', 'cli'}
+from pimconfig import ProductionConfig, DevelopmentConfig, TestingConfig
+
+from pimcore import PimApp
+# class PimApp:
+#     loglevel = logging.WARNING
+#     logger = None
+#     env = None
+#     modules = {'web', 'cli'}
 
 pim_app = PimApp()
-
-class Config(object):
-    TESTING = False
-
-class ProductionConfig(Config):
-    DATABASE = "db/prod.db"
-    ENV="production"
-
-class DevelopmentConfig(Config):
-    DATABASE = "db/dev.db"
-    ENV="development"
-
-class TestingConfig(Config):
-    DATABASE = ':memory:'
-    ENV="testing"
-    TESTING = True
+pim_app.config = ProductionConfig
 
 # commandline management
 cmdlineparser = argparse.ArgumentParser(description='Start PIM, the Personal Information Manager')
@@ -90,6 +78,7 @@ def web_thread():
 logging.debug(f'using environment "{pim_app.config.ENV}"')
 
 if __name__ == "__main__":
+    pimdata.pimdata_init(pim_app.config )
     logging.debug(f'starting {len(pim_app.modules)} module(s)')
     if 'web' in pim_app.modules:
         logging.debug('creating maintenance thread')
