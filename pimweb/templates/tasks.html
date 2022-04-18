@@ -1,0 +1,8 @@
+<!doctype html>
+<title>PIM Task list</title>
+<h1>Task list</h1>
+<ul>
+{% for task in tasks %}
+  <li>#{{ task.task_id }}: {{ task.label }}</li>
+{% endfor %}
+</ul>

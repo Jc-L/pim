@@ -45,7 +45,7 @@ logging.debug('debug mode is active')
 # load/configure local modules
 try:
     import pimdata
-    import flaskr
+    import pimweb
 except ModuleNotFoundError as err:
     logging.critical(f"early initialization error. {type(err).__name__}: {err}")
     # print(f"Unexpected {err=}, {type(err)=}")
@@ -84,7 +84,7 @@ if __name__ == "__main__":
         thread_maintenance = threading.Thread(target=thread_maintenance, name='maintenance', daemon=True, args=("dumb value",))
         thread_maintenance.start()
     if 'web' in pim_app.modules:
-        logging.debug('creating flask app')
-        flask_app = flaskr.create_app(pim_app.config)
-        logging.debug('flask app starting in main thread')
-        flask_app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False, threaded=True)
+        logging.debug('creating web app')
+        web_app = pimweb.create_app(pim_app.config)
+        logging.debug('web app starting in main thread')
+        web_app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False, threaded=True)
