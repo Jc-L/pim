@@ -26,11 +26,28 @@ class People(Model):
     class Meta:
         database = db_proxy
 
+class Organization(Model):
+    organization_id = AutoField()
+    name = CharField(null = False)
+    description = TextField(null = True)
+    # See also http://docs.peewee-orm.com/en/latest/peewee/models.html#self-referential-foreign-keys
+    parent_organization = ForeignKeyField('self', backref='child_organizations', null=True)
+    class Meta:
+        database = db_proxy
+
 class PeopleRole(Model):
     peoplerole_id = AutoField()
+    people_id = ForeignKeyField(People, backref='roles')
+    organization_id = ForeignKeyField(Organization, backref='roles')
+
     description = CharField(null = False)
+    email = CharField(null = True)
+    phone = CharField(null = True)
+    cellphone = CharField(null = True)
+    fax = CharField(null = True)
     start = DateTimeField(null = False)
     stop = DateTimeField(default = '2099-01-01')
+    created = DateTimeField(default = datetime.datetime.now)
     class Meta:
         database = db_proxy
 # When you need to refer to people through an external ID
@@ -40,15 +57,7 @@ class PeopleExternalId(Model):
     name = CharField(null = False)
     value = CharField(null = False)
     people = ForeignKeyField(People, backref='externalids')
-    class Meta:
-        database = db_proxy
-
-class Organization(Model):
-    organization_id = AutoField()
-    name = CharField(null = False)
-    description = TextField(null = True)
-    # See also http://docs.peewee-orm.com/en/latest/peewee/models.html#self-referential-foreign-keys
-    parent_organization = ForeignKeyField('self', backref='child_organizations', null=True)
+    created = DateTimeField(default = datetime.datetime.now)
     class Meta:
         database = db_proxy
 

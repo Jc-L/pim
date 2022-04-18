@@ -30,8 +30,8 @@ winpty python
 import logging
 from pimconfig import ProductionConfig, DevelopmentConfig, TestingConfig
 from pimcore import PimApp
-import pimdata
-pim_app = PimApp(ProductionConfig)
+from pimdata import *
+pim_app = PimApp(DevelopmentConfig)
 pimdata.pimdata_init(pim_app.config )
 
 

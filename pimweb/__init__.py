@@ -31,10 +31,13 @@ def create_app(config):
     def hello(name=None):
         return render_template('hello.html', name=name)
     
+    @app.route('/people/')
+    def people():
+        return render_template('people.html', people=People.select())
+
     @app.route('/tasks/')
     def tasks():
         return render_template('tasks.html', tasks=Task.select())
-
    #  url_for('static', filename='style.css')
 
     return app
