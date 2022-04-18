@@ -16,8 +16,7 @@ from pimcore import PimApp
 #     env = None
 #     modules = {'web', 'cli'}
 
-pim_app = PimApp()
-pim_app.config = ProductionConfig
+pim_app = PimApp(ProductionConfig)
 
 # commandline management
 cmdlineparser = argparse.ArgumentParser(description='Start PIM, the Personal Information Manager')

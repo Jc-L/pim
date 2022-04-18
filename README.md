@@ -22,3 +22,17 @@ winpty python pim-web.py
 ```
 
 It should then be reachable on <http://127.0.0.1:5000/>
+
+
+```bash
+winpty python
+
+import logging
+from pimconfig import ProductionConfig, DevelopmentConfig, TestingConfig
+from pimcore import PimApp
+import pimdata
+pim_app = PimApp(ProductionConfig)
+pimdata.pimdata_init(pim_app.config )
+
+
+```

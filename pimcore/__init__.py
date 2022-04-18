@@ -6,3 +6,7 @@ class PimApp:
     logger = None
     env = None
     modules = {'web', 'cli'}
+    config = None
+
+    def __init__(self, config):
+        self.config = config
