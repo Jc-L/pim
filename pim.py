@@ -8,13 +8,7 @@ import threading
 import time
 
 from pimconfig import ProductionConfig, DevelopmentConfig, TestingConfig
-
 from pimcore import PimApp
-# class PimApp:
-#     loglevel = logging.WARNING
-#     logger = None
-#     env = None
-#     modules = {'web', 'cli'}
 
 pim_app = PimApp(ProductionConfig)
 
@@ -31,6 +25,7 @@ group_env.add_argument('--test', action='store_const', dest='config', const=Test
 group_disable_modules = cmdlineparser.add_argument_group(title='options for modules', description=None)
 group_disable_modules.add_argument('--disable-web', action='append_const', dest='disable', const='web', help='disable web server' )
 group_disable_modules.add_argument('--disable-cli', action='append_const', dest='disable', const='cli', help='disable command-line interface' )
+group_disable_modules.add_argument('--disable-mnt', action='append_const', dest='disable', const='maintenance', help='disable maintenance module' )
 cmdlineargs = cmdlineparser.parse_args()
 # commandline content used to update global pim_app object
 pim_app.loglevel = cmdlineargs.loglevel
@@ -55,22 +50,48 @@ except BaseException as err:
     exit(1)
 
 ##################################
-# 
+# 'Maintenance' module
 ##################################
+def maintenance_start():
+    logging.debug('creating maintenance thread')
+    thread_maintenance = threading.Thread(target=maintenance_thread, name='maintenance', daemon=True)
+    thread_maintenance.start()
 
-def thread_maintenance(dumbval):
+def maintenance_thread():
     cur_thr = threading.current_thread()
     logging.info("[%s %s] starting", cur_thr.name, cur_thr.native_id)
     while True:
-        time.sleep(10)
+        time.sleep(5)
         logging.info("[%s %s] executing", cur_thr.name, cur_thr.native_id)
     logging.info("[%s] finishing", cur_thr.name)
     return 0
+
+
+##################################
+# 'Web' module
+##################################
+
+def web_start():
+    logging.debug('creating \'web\' module')
+    web_app = pimweb.create_module(pim_app.config)
+    logging.debug('\'web\' module starting in main thread')
+    web_app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False, threaded=True)
 
 # see https://stackoverflow.com/questions/31264826/start-a-flask-application-in-separate-thread
 def web_thread():
     return 0
     
+
+##################################
+# 'CLI' module
+##################################
+
+def cli_start():
+    import pimcli
+    logging.debug('creating \'cli\' module')
+    cli = pimcli.PimCli()
+
+
 ##################################
 # Main part
 ##################################
@@ -79,12 +100,16 @@ logging.debug(f'using environment "{pim_app.config.ENV}"')
 if __name__ == "__main__":
     pimdata.pimdata_init(pim_app.config )
     logging.debug(f'starting {len(pim_app.modules)} module(s)')
+    if 'maintenance' in pim_app.modules:
+        maintenance_start()
+    else:
+        logging.info('skipping disabled \'maintenance\' module')
     if 'web' in pim_app.modules:
-        logging.debug('creating maintenance thread')
-        thread_maintenance = threading.Thread(target=thread_maintenance, name='maintenance', daemon=True, args=("dumb value",))
-        thread_maintenance.start()
-    if 'web' in pim_app.modules:
-        logging.debug('creating web app')
-        web_app = pimweb.create_app(pim_app.config)
-        logging.debug('web app starting in main thread')
-        web_app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False, threaded=True)
+        web_start()
+    else:
+        logging.info('skipping disabled \'web\' module')
+    if 'cli' in pim_app.modules:
+        cli_start()
+    else:
+        logging.info('skipping disabled \'cli\' module')
+
