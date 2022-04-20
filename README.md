@@ -32,7 +32,7 @@ from pimconfig import ProductionConfig, DevelopmentConfig, TestingConfig
 from pimcore import PimApp
 from pimdata import *
 pim_app = PimApp(DevelopmentConfig)
-pimdata.pimdata_init(pim_app.config )
+pimdata_init(pim_app.config )
 
 
 ```

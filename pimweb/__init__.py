@@ -3,7 +3,7 @@ import os
 # local modules
 from pimdata import *
 
-from flask import Flask, render_template, url_for
+from flask import Blueprint, Flask, flash, g, redirect, render_template, request, url_for
 
 
 def create_module(config):
@@ -26,10 +26,9 @@ def create_module(config):
 
 
     # a simple page that says hello
-    @app.route('/hello/')
-    @app.route('/hello/<name>')
-    def hello(name=None):
-        return render_template('hello.html', name=name)
+    @app.route('/')
+    def index(name=None):
+        return render_template('index.html')
     
     @app.route('/people/')
     def people():
@@ -37,7 +36,32 @@ def create_module(config):
 
     @app.route('/tasks/')
     def tasks():
-        return render_template('tasks.html', tasks=Task.select())
+        return render_template('tasks/list.html', tasks=Task.select())
+
+    @app.route("/tasks/create", methods=("GET", "POST"))
+    def create():
+        """Create a new task."""
+        if request.method == "POST":
+            label = request.form["label"]
+            description = request.form["description"]
+            error = None
+
+            if not label:
+                error = "Label is required."
+
+            if error is not None:
+                flash(error)
+            else:
+                task = Task()
+                task.label = label
+                task.description = description
+                task.save()
+                return redirect(url_for("index"))
+
+        return render_template("tasks/create.html")
+
+
+
    #  url_for('static', filename='style.css')
 
     return app
