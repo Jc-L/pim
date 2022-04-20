@@ -1,0 +1,8 @@
+<!doctype html>
+<title>PIM People list</title>
+<h1>People list</h1>
+<ul>
+{% for p in people %}
+  <li>#{{ p.people_id }}: {{ p.name }}, {{ p.firstname }}</li>
+{% endfor %}
+</ul>
